@@ -2,8 +2,6 @@
 	heap
 	This question requires you to implement a binary heap function
 */
-// I AM NOT DONE
-
 use std::cmp::Ord;
 use std::default::Default;
 
@@ -18,7 +16,7 @@ where
 
 impl<T> Heap<T>
 where
-    T: Default,
+    T: Default + Copy + std::fmt::Display,
 {
     pub fn new(comparator: fn(&T, &T) -> bool) -> Self {
         Self {
@@ -37,7 +35,56 @@ where
     }
 
     pub fn add(&mut self, value: T) {
-        //TODO
+        self.count += 1;
+        self.items.push(value);
+        self.percolate_up(self.items[self.count]);
+    }
+
+    fn percolate_up(&mut self, value: T) {
+        let mut i = self.count;
+        while i > 1 {
+            let parent_idx = self.parent_idx(i);
+            if (self.comparator)(&value, &self.items[parent_idx]) {
+                self.items[i] = self.items[parent_idx];
+                i = parent_idx;
+            } else {
+                break;
+            }
+        }
+        self.items[i] = value;
+
+    }
+
+    pub fn del(&mut self) -> Option<T> {
+        if self.count == 0 {
+            return None
+        }
+        let res = self.items[1];
+        self.items[1] = self.items.pop().unwrap();
+        self.count -= 1;
+        self.percolate_down(self.items[1]);
+        return Some(res)
+    }
+
+    fn percolate_down(&mut self, value: T) {
+        let mut i = 1;
+        while i < self.count {
+            let li = self.left_child_idx(i);
+            let ri = self.right_child_idx(i);
+            if li > self.count {
+                break;
+            }
+            let new_root = if ri > self.count { li } else {
+                if (self.comparator)(&self.items[li], &self.items[ri]) {li} else {ri}
+            };
+            if (self.comparator)(&self.items[new_root], &value) {
+                self.items[i] = self.items[new_root];
+                i = new_root;
+            } else {
+                break;
+            }
+        }
+        self.items[i] = value;
     }
 
     fn parent_idx(&self, idx: usize) -> usize {
@@ -58,13 +105,19 @@ where
 
     fn smallest_child_idx(&self, idx: usize) -> usize {
         //TODO
-		0
+        if self.count < 2 {
+            1
+        } else if (self.comparator)(&self.items[1], &self.items[2]) {
+            1
+        } else {
+            self.count
+        }
     }
 }
 
 impl<T> Heap<T>
 where
-    T: Default + Ord,
+    T: Default + Ord + Copy + std::fmt::Display,
 {
     /// Create a new MinHeap
     pub fn new_min() -> Self {
@@ -79,13 +132,13 @@ where
 
 impl<T> Iterator for Heap<T>
 where
-    T: Default,
+    T: Default + Copy + std::fmt::Display,
 {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
         //TODO
-		None
+        self.del()
     }
 }
 
@@ -95,7 +148,7 @@ impl MinHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Copy + std::fmt::Display,
     {
         Heap::new(|a, b| a < b)
     }
@@ -107,7 +160,7 @@ impl MaxHeap {
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>() -> Heap<T>
     where
-        T: Default + Ord,
+        T: Default + Ord + Copy + std::fmt::Display,
     {
         Heap::new(|a, b| a > b)
     }
@@ -134,6 +187,7 @@ mod tests {
         assert_eq!(heap.next(), Some(4));
         assert_eq!(heap.next(), Some(9));
         heap.add(1);
+        println!("count: {}, {}", heap.count, heap.items[1]);
         assert_eq!(heap.next(), Some(1));
     }
 
